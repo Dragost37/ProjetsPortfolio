@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>📊 Enregistrer une consommation d'énergie</h1>
+<h1>🗂️ Enregistrer une consommation d'énergie</h1>
 
 <div class="card">
   <div class="alert success" id="successMessage" role="alert" hidden style="margin-bottom: 16px;">
-    ✅ Enregistrement créé avec succès ! Vous pouvez <a href="/list" style="text-decoration: underline; color: inherit;">voir la liste</a> ou <a href="#form" onclick="resetForm(); return false;" style="text-decoration: underline; color: inherit;">ajouter un autre</a>.
+    ✅ Enregistrement créé avec succès ! Vous pouvez <a href="/list" style="text-decoration: underline; color: inherit;">voir la liste</a>.
   </div>
 
   <form id="recordForm" method="post" action="/records" class="form-grid">
