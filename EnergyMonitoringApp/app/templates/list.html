@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📋 Liste des consommations énergétiques</h1>
+
+<div class="card">
+  <form method="get" action="/list" class="row wrap" id="filterForm">
+    <fieldset style="border: none; padding: 0; margin: 0; display: contents;">
+      <legend class="sr-only">Filtre par catégorie</legend>
+      
+      <div class="field inline" style="width: auto;">
+        <label for="categoryFilter">Filtrer par catégorie</label>
+        <select id="categoryFilter" name="category_id" aria-describedby="filter-hint">
+          <option value="">Toutes les catégories</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}" {% if selected_category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field inline" style="width: auto;">
+        <label for="yearFilter">Filtrer par année</label>
+        <select id="yearFilter" name="year" aria-describedby="year-hint year-error">
+          <option value="all" {% if selected_year == 'all' %}selected{% endif %}>Toutes les années</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if selected_year == y|string %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn secondary" type="submit" title="Appliquer le filtre">🔍 Filtrer</button>
+      <a class="btn primary" href="/form" title="Ajouter un nouvel enregistrement">➕ Ajouter</a>
+    </fieldset>
+  </form>
+
+<script>
+  document.getElementById('filterForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const categoryId = document.getElementById('categoryFilter').value;
+    const year = document.getElementById('yearFilter').value;
+    const yearError = document.getElementById('year-error');
+
+    // Erreur si année non sélectionnée
+    if (year === '') {
+      if (yearError) yearError.style.display = 'inline';
+      document.getElementById('yearFilter').focus();
+      return;
+    }
+    if (yearError) yearError.style.display = 'none';
+
+    const url = new URL(window.location.origin + "/list");
+
+    if (categoryId !== '') {
+      url.searchParams.set('category_id', categoryId);
+    }
+
+    if (year !== 'all') {
+      url.searchParams.set('year', year);
+    }
+
+    window.location.href = url.toString();
+  });
+</script>
+
+<div class="card">
+  <table class="table" role="grid" aria-label="Table des consommations énergétiques">
+    <thead>
+      <tr>
+        <th scope="col">#ID</th>
+        <th scope="col">Année</th>
+        <th scope="col">Catégorie</th>
+        <th scope="col" style="text-align: right;">Consommation (kWh)</th>
+        <th scope="col" style="text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if rows|length == 0 %}
+        <tr>
+          <td colspan="5" class="muted">
+            <p>Aucune donnée enregistrée.</p>
+            <a href="/form" class="btn primary small">Enregistrer une consommation →</a>
+          </td>
+        </tr>
+      {% else %}
+        {% for r in rows %}
+          <tr>
+            <td><code>{{ r.id }}</code></td>
+            <td>{{ r.year }}</td>
+            <td>
+              <div class="tags">
+                <span class="tag primary">{{ r.category }}</span>
+                {% if r.subcategory %}
+                  <span class="tag success">{{ r.subcategory }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="text-align: right; font-weight: 600;">{{ "%.2f"|format(r.value_kwh) }}</td>
+            <td style="text-align: right;">
+              <form method="post" action="/records/{{ r.id }}/delete"
+                    onsubmit="return confirm('Supprimer définitivement cette entrée (#{{ r.id }}) ?');"
+                    style="display:inline;">
+                <input type="hidden" name="category_id" value="{{ selected_category_id or '' }}">
+                <input type="hidden" name="year" value="{{ selected_year or '' }}">
+                <button class="btn danger small" type="submit" title="Supprimer cette entrée">🗑 Supprimer</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

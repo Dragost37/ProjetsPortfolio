@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📊 Enregistrer une consommation d'énergie</h1>
+
+<div class="card">
+  <div class="alert success" id="successMessage" role="alert" hidden style="margin-bottom: 16px;">
+    ✅ Enregistrement créé avec succès ! Vous pouvez <a href="/list" style="text-decoration: underline; color: inherit;">voir la liste</a> ou <a href="#form" onclick="resetForm(); return false;" style="text-decoration: underline; color: inherit;">ajouter un autre</a>.
+  </div>
+
+  <form id="recordForm" method="post" action="/records" class="form-grid">
+    <fieldset>
+      <legend class="sr-only">Formulaire d'enregistrement d'énergie</legend>
+      
+      <div class="field">
+        <label for="year">Année <span aria-label="champ obligatoire">*</span></label>
+        <input 
+          id="year" 
+          name="year" 
+          type="number" 
+          min="1900" 
+          max="2100" 
+          value="2024" 
+          required 
+          aria-required="true"
+          aria-describedby="year-hint"
+        />
+        <small class="hint" id="year-hint">Sélectionnez l'année de la consommation</small>
+      </div>
+
+      <div class="field">
+        <label for="category_id">Catégorie d'énergie <span aria-label="champ obligatoire">*</span></label>
+        <div class="row">
+          <select 
+            id="category_id" 
+            name="category_id" 
+            required 
+            aria-required="true"
+            aria-describedby="category-hint"
+          >
+            <option value="" disabled selected>-- Choisir une catégorie --</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="btn secondary small" id="btnOpenCategoryModal" title="Ajouter une nouvelle catégorie d'énergie">+ Nouvelle</button>
+        </div>
+        <small class="hint" id="category-hint">Vous pouvez créer une catégorie directement depuis le formulaire</small>
+      </div>
+
+      <div class="field">
+        <label for="subcategory_id">Type d'énergie <span aria-label="champ obligatoire">*</span></label>
+        <select 
+          id="subcategory_id" 
+          name="subcategory_id"
+          required
+          aria-required="true"
+          aria-describedby="subcategory-hint"
+        >
+          <option value="" disabled selected>-- Choisir un type d'énergie --</option>
+        </select>
+        <small class="hint" id="subcategory-hint">Sélectionnez le type d'énergie spécifique</small>
+      </div>
+
+      <div class="field">
+        <label for="value_kwh">Valeur énergétique (kWh) <span aria-label="champ obligatoire">*</span></label>
+        <input 
+          id="value_kwh" 
+          name="value_kwh" 
+          type="number" 
+          step="0.01" 
+          min="0" 
+          placeholder="Exemple: 1250.50" 
+          required 
+          aria-required="true"
+          aria-describedby="value-hint"
+        />
+        <small class="hint" id="value-hint">Entrez la consommation en kilowatt-heures (kWh)</small>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">💾 Enregistrer</button>
+        <a class="btn ghost" href="/list">Voir la liste →</a>
+      </div>
+    </fieldset>
+  </form>
+</div>
+
+<script>
+function resetForm() {
+  const form = document.getElementById('recordForm');
+  const successMsg = document.getElementById('successMessage');
+  form.reset();
+  successMsg.hidden = true;
+  document.getElementById('subcategory_id').innerHTML = '<option value="" disabled selected>-- Choisir un type d\'énergie --</option>';
+  document.getElementById('category_id').focus();
+  window.scrollTo(0, 0);
+}
+
+document.getElementById('recordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const form = document.getElementById('recordForm');
+  const successMsg = document.getElementById('successMessage');
+  
+  const formData = new FormData(form);
+  
+  try {
+    const res = await fetch('/records', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (res.ok) {
+      successMsg.hidden = false;
+      form.reset();
+      document.getElementById('subcategory_id').innerHTML = '<option value="" disabled selected>-- Choisir un type d\'énergie --</option>';
+      window.scrollTo(0, 0);
+    } else {
+      alert('Erreur lors de l\'enregistrement');
+    }
+  } catch (err) {
+    console.error('Erreur:', err);
+    alert('Erreur lors de l\'enregistrement');
+  }
+});
+</script>
+
+<!-- Modal création catégorie avec sous-catégories -->
+<div class="modal" id="categoryModal" aria-hidden="true" aria-labelledby="modalTitle">
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-panel" role="dialog" aria-modal="true" style="max-height: 90vh; overflow-y: auto;">
+    <div class="modal-header">
+      <h2 id="modalTitle">Gérer les catégories</h2>
+    </div>
+
+    <div class="modal-body">
+      <!-- Tabs/Modes -->
+      <div class="tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+        <button type="button" id="tabNewCategory" class="tab-btn" style="background: none; border: none; cursor: pointer; color: #3498DB; font-weight: bold; padding: 8px 0; border-bottom: 3px solid #3498DB;">
+          ➕ Nouvelle catégorie
+        </button>
+        <button type="button" id="tabAddSubcat" class="tab-btn" style="background: none; border: none; cursor: pointer; color: #999; font-weight: bold; padding: 8px 0; border-bottom: 3px solid transparent;">
+          ➕ Ajouter type
+        </button>
+      </div>
+
+      <!-- Mode 1: Create new category -->
+      <div id="modeNewCategory" style="display: block;">
+        <div class="field">
+          <label for="newCategoryName">Nom de la catégorie <span aria-label="champ obligatoire">*</span></label>
+          <input 
+            id="newCategoryName" 
+            type="text" 
+            maxlength="100" 
+            placeholder="Exemple: Énergie hydraulique" 
+            required
+            aria-required="true"
+            aria-describedby="name-hint"
+          />
+          <small class="hint" id="name-hint">100 caractères maximum</small>
+        </div>
+
+        <div class="field">
+          <label for="newCategoryDesc">Description (optionnel)</label>
+          <input 
+            id="newCategoryDesc" 
+            type="text" 
+            maxlength="255" 
+            placeholder="Exemple: Énergie provenant des cours d'eau"
+            aria-describedby="desc-hint"
+          />
+          <small class="hint" id="desc-hint">255 caractères maximum</small>
+        </div>
+
+        <div class="field">
+          <label for="newSubcategoryName">Types d'énergie (ajouter au moins un)</label>
+          <div id="subcategoryList" style="display: grid; gap: 8px; margin-bottom: 12px;">
+            <!-- Les types d'énergie s'ajoutent ici -->
+          </div>
+          <button type="button" class="btn secondary small" id="btnAddSubcategoryField">+ Ajouter un type</button>
+        </div>
+      </div>
+
+      <!-- Mode 2: Add subcategory to existing -->
+      <div id="modeAddSubcat" style="display: none;">
+        <div class="field">
+          <label for="existingCategorySelect">Sélectionner une catégorie <span aria-label="champ obligatoire">*</span></label>
+          <select id="existingCategorySelect" aria-describedby="category-select-hint">
+            <option value="">-- Choisir une catégorie --</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+          <small class="hint" id="category-select-hint">Sélectionnez la catégorie à laquelle ajouter le type</small>
+        </div>
+
+        <div class="field">
+          <label for="newSubcategoryNameAdd">Nom du type d'énergie <span aria-label="champ obligatoire">*</span></label>
+          <input 
+            id="newSubcategoryNameAdd" 
+            type="text" 
+            maxlength="100" 
+            placeholder="Exemple: Photovoltaïque" 
+            required
+            aria-required="true"
+            aria-describedby="subcat-name-hint"
+          />
+          <small class="hint" id="subcat-name-hint">100 caractères maximum</small>
+        </div>
+      </div>
+
+      <div class="alert alert.error" id="categoryAlert" role="alert" hidden></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" type="button" data-close-modal>Annuler</button>
+      <button class="btn primary" type="button" id="btnCreateCategory">✓ Créer</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

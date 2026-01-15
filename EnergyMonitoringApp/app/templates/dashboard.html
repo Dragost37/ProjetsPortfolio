@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📊 Tableau de bord énergétique</h1>
+
+  <div class="card">
+  <h2>🌍 Comparaison par source d'énergie</h2>
+  
+  <div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start;">
+    <!-- Graphique -->
+    <div>
+      <svg id="stackedChart" style="width: 100%; height: 400px;"></svg>
+    </div>
+    
+    <!-- Panel détail -->
+    <div id="detailPanel" style="background: var(--bg-alt); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-height: 300px;">
+      <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 2px solid var(--border);">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">⚡ Total</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--primary);">{{ "%.0f"|format(total) }}</div>
+            <div style="font-size: 11px; color: var(--text-light);">kWh</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">📊 Enr.</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--primary);">{{ count }}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">📈 Moyenne</div>
+          <div style="font-size: 20px; font-weight: 700; color: var(--primary);">{{ "%.0f"|format(avg) }}</div>
+          <div style="font-size: 11px; color: var(--text-light);">kWh</div>
+        </div>
+      </div>
+      
+      <div id="categoryDetail">
+        <div style="text-align: center; color: var(--text-light); padding: 40px 16px; font-size: 13px;">
+          <p style="margin: 0;">📍 Survolez une barre pour voir<br/>le détail par sous-catégorie</p>
+        </div>
+      </div>
+    </div>
+  </div>    <script>
+        const categoryDetail = document.getElementById('categoryDetail');
+        let breakdownData = {};
+
+        // Couleurs pour chaque catégorie (matching le design)
+        const colorScale = {
+            'Autres EnR': '#E74C3C',
+            'Biomasse': '#3498DB',
+            'Hydraulique': '#27AE60',
+            'Récupération': '#F39C12',
+            'Solaire': '#9B59B6',
+            'Éolien': '#1ABC9C'
+        };
+
+        function showDetailPanel(year, categoryName, subcategoryData) {
+            const total = Object.values(subcategoryData).reduce((a, b) => a + b, 0);
+            
+            let html = `<div>
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 12px; color: var(--text-light); margin-bottom: 4px;">Année ${year}</div>
+                    <h3 style="margin: 0; font-size: 18px; color: var(--primary);">${categoryName}</h3>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">`;
+            
+            const sorted = Object.entries(subcategoryData)
+                .sort(([, a], [, b]) => b - a);
+            
+            for (const [subcatName, value] of sorted) {
+                const percentage = ((value / total) * 100).toFixed(1);
+                const barWidth = (value / total) * 100;
+                html += `
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                            <strong style="color: var(--text);">${subcatName}</strong>
+                            <span style="color: var(--primary); font-weight: 700;">${value.toLocaleString('fr-RE')} kWh</span>
+                        </div>
+                        <div style="background: var(--border); height: 20px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--primary), var(--secondary)); height: 100%; width: ${barWidth}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; color: white; font-size: 10px; font-weight: 700;">
+                                ${barWidth > 15 ? percentage + '%' : ''}
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            
+            html += `
+                    <div style="margin-top: 16px; padding-top: 12px; border-top: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 12px; color: var(--text-light);">Total catégorie:</span>
+                        <span style="font-size: 16px; font-weight: 700; color: var(--primary);">${total.toLocaleString('fr-RE')} kWh</span>
+                    </div>
+                </div>
+            </div>`;
+            
+            categoryDetail.innerHTML = html;
+        }
+
+        function resetDetailPanel() {
+            categoryDetail.innerHTML = `<div style="text-align: center; color: var(--text-light); padding: 40px 16px; font-size: 13px;">
+                <p style="margin: 0;">📍 Survolez une barre pour voir<br/>le détail par sous-catégorie</p>
+            </div>`;
+        }
+
+        async function initD3Chart() {
+            const years = {{ stacked_years | tojson }};
+            const datasets = {{ stacked_datasets | tojson }};
+            
+            try {
+                const response = await fetch('/api/category-subcategory-breakdown');
+                breakdownData = await response.json();
+            } catch (err) {
+                console.error('Erreur lors du chargement des données:', err);
+            }
+
+            const data = years.map((year, i) => {
+                const obj = { year: String(year) };
+                datasets.forEach(dataset => {
+                    obj[dataset.label] = dataset.data[i] || 0;
+                });
+                return obj;
+            });
+
+            const svg = d3.select('#stackedChart');
+            svg.selectAll("*").remove();
+            
+            const container = svg.node().parentElement;
+            const containerWidth = container.offsetWidth;
+            const containerHeight = 400;
+
+            const margin = { top: 30, right: 20, bottom: 40, left: 70 };
+            const width = containerWidth - margin.left - margin.right;
+            const height = containerHeight - margin.top - margin.bottom;
+
+            svg.attr('width', containerWidth)
+               .attr('height', containerHeight);
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => d.year))
+                .range([0, width])
+                .padding(0.3);
+
+            const yMax = d3.max(data, d => {
+                return datasets.reduce((sum, dataset) => sum + (d[dataset.label] || 0), 0);
+            });
+
+            const yScale = d3.scaleLinear()
+                .domain([0, yMax * 1.1])
+                .range([height, 0]);
+
+            const stack = d3.stack()
+                .keys(datasets.map(d => d.label));
+
+            const stackedData = stack(data);
+
+            const xAxis = d3.axisBottom(xScale);
+            const yAxis = d3.axisLeft(yScale)
+                .tickFormat(d => {
+                    if (d >= 1000) return (d / 1000).toFixed(0) + 'k';
+                    return d;
+                });
+
+            g.append('g')
+                .attr('class', 'd3-axis')
+                .attr('transform', `translate(0,${height})`)
+                .call(xAxis);
+
+            g.append('g')
+                .attr('class', 'd3-axis')
+                .call(yAxis);
+
+            const groups = g.selectAll('g.category')
+                .data(stackedData)
+                .enter()
+                .append('g')
+                .attr('class', 'category')
+                .attr('fill', d => colorScale[d.key] || '#999');
+
+            groups.selectAll('rect')
+                .data(d => d)
+                .enter()
+                .append('rect')
+                .attr('x', d => xScale(d.data.year))
+                .attr('y', d => yScale(d[1]))
+                .attr('height', d => yScale(d[0]) - yScale(d[1]))
+                .attr('width', xScale.bandwidth())
+                .attr('class', 'stacked-rect')
+                .style('cursor', 'pointer')
+                .style('opacity', 0.85)
+                .on('mouseover', function(event, d) {
+                    const categoryName = d3.select(this.parentNode).datum().key;
+                    const year = d.data.year;
+                    
+                    if (breakdownData[year] && breakdownData[year][categoryName]) {
+                        showDetailPanel(year, categoryName, breakdownData[year][categoryName]);
+                    } else {
+                        resetDetailPanel();
+                    }
+                    
+                    d3.select(this)
+                        .style('opacity', 1)
+                        .style('stroke', '#000')
+                        .style('stroke-width', '2px');
+                })
+                .on('mouseout', function() {
+                    d3.select(this)
+                        .style('opacity', 0.85)
+                        .style('stroke', 'none');
+                    resetDetailPanel();
+                });
+
+            const legend = svg.append('g')
+                .attr('class', 'd3-legend')
+                .attr('transform', `translate(${margin.left}, 10)`);
+
+            const legendItems = legend.selectAll('g')
+                .data(datasets.map(d => d.label))
+                .enter()
+                .append('g')
+                .attr('transform', (d, i) => {
+                    const itemsPerRow = Math.floor(width / 150);
+                    const row = Math.floor(i / itemsPerRow);
+                    const col = i % itemsPerRow;
+                    return `translate(${col * 150}, ${row * 20})`;
+                });
+
+            legendItems.append('rect')
+                .attr('width', 14)
+                .attr('height', 14)
+                .attr('fill', d => colorScale[d] || '#999')
+                .attr('rx', 2);
+
+            legendItems.append('text')
+                .attr('x', 20)
+                .attr('y', 11)
+                .attr('font-size', '12px')
+                .attr('fill', 'var(--text)')
+                .text(d => d);
+        }
+
+        // Attendre que D3 soit chargé
+        function waitForD3() {
+            if (typeof d3 !== 'undefined') {
+                initD3Chart();
+            } else {
+                setTimeout(waitForD3, 100);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitForD3);
+        } else {
+            waitForD3();
+        }
+    </script>
+
+</div>
+
+{% endblock %}
