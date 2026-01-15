@@ -59,7 +59,6 @@ docker compose up --build
 ### 3. Accéder à l'application
 - **Interface Web** : http://localhost:8000
 - **API Swagger** : http://localhost:8000/docs
-- **API ReDoc** : http://localhost:8000/redoc
 
 ### 4. Arrêter l'application
 ```bash
@@ -323,7 +322,7 @@ Pour des questions ou problèmes :
 - Consultez la page API (`/docs`)
 - Vérifiez les logs Docker : `docker compose logs -f`
 - Vérifiez les erreurs (F12) sur le frontend
-- Vérifiez les documentations au format .md
+- Vérifiez les documentations au format .md (Dossier Documentations)
 - Ouvrez une issue sur GitHub
 
 ---

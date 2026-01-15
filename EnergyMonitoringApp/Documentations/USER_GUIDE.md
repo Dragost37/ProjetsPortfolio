@@ -122,3 +122,8 @@ Oui, chaque validation enregistre immédiatement les données.
 En cas de problème :
 - Vérifiez les données saisies
 - Contactez l’administrateur de l’application
+
+---
+
+**Dernière mise à jour** : 15 janvier 2026 
+**Version** : 1.0.0
