@@ -33,16 +33,14 @@ La démarche suivie a été itérative :
 - **Base de données** : PostgresSQL
 
 **Justification :**
-- FastAPI offre une structure claire, des performances élevées et une validation automatique des données.
-- SQLAlchemy permet une bonne séparation entre la logique métier et la base de données.
-- Le typage explicite facilite la robustesse de l’API.
+- SQLAlchemy permet une bonne séparation entre la logique et la base de données.
 
 ---
 
 ### 3.2 Frontend
 
 - **Templates HTML** avec Jinja2
-- **CSS**
+- **CSS** pour définir un style personnalisé.
 - **JavaScript** pour la gestion des filtres et des interactions utilisateur
 
 **Justification :**
@@ -58,25 +56,15 @@ La conception de l’interface utilisateur s’est appuyée sur plusieurs princi
 
 - **Simplicité et lisibilité** : limiter la charge cognitive de l’utilisateur.
 - **Cohérence** : mêmes logiques d’interaction sur l’ensemble de l’application.
-- **Feedback utilisateur** : chaque action importante génère un retour visible.
-- **Prévention des erreurs** plutôt que correction a posteriori.
+- **Feedback utilisateur** : chaque action importante génère un retour visible. (Feedback)
+- **Prévention des erreurs** plutôt que correction a posteriori. (Feedback)
 - **Progressivité** : affichage des informations selon le besoin réel.
 
 Ces principes ont guidé aussi bien la structure des pages que le comportement dynamique des formulaires et filtres.
 
 ---
 
-### 4.2 Organisation de l’interface
-
-L’interface est structurée autour de trois écrans principaux :
-
-1. **Formulaire de saisie**
-2. **Liste des consommations**
-3. **Dashboard de visualisation**
-
----
-
-### 4.3 Conception du formulaire de saisie
+### 4.2 Conception du formulaire de saisie
 
 Le formulaire de saisie a été conçu pour :
 
@@ -90,16 +78,16 @@ Le formulaire de saisie a été conçu pour :
 - Validation côté backend pour garantir l’intégrité des données.
 - Organisation verticale logique (année → catégorie → sous-catégorie → valeur).
 
-L’ajout ultérieur des **sous-catégories** a amélioré la précision des données, mais a introduit une complexité supplémentaire dans l’interface.
+L’ajout des **sous-catégories** a amélioré la précision des données (ce que je pense nécessaire dans le domaine des énergies), mais a introduit une complexité supplémentaire dans l’interface.
 
 ---
 
-### 4.4 Conception de la liste et des filtres
+### 4.3 Conception de la liste et des filtres
 
 La page liste a été pensée comme un **outil de consultation et de contrôle** des données.
 
 #### Choix d’ingénierie IHM :
-- Tableau lisible avec hiérarchisation visuelle des informations.
+- Tableau lisible avec hiérarchisation visuelle des informations et tags de catégorisation.
 - Filtres combinables (catégorie / année).
 - Conservation des filtres après action (suppression).
 - Bouton de suppression avec **confirmation explicite** afin d’éviter toute erreur critique.
@@ -115,10 +103,9 @@ Un travail spécifique a été mené pour :
 
 Un soin particulier a été apporté à la **prévention des erreurs utilisateur** :
 
-- Obligation de sélectionner une année avant le filtrage.
 - Distinction claire entre :
-  - *“Sélectionner une option”* (non valide),
-  - *“Toutes les années”* (choix explicite).
+  - *“Toutes les années”* (choix par défault).
+  - *“Une année en particulier”* (choix explicite).
 - Messages d’erreur visibles et compréhensibles.
 - Aucune action destructrice sans confirmation.
 
@@ -150,6 +137,7 @@ Ce décalage a mis en évidence l’importance :
 - Absence de messages contextuels explicatifs pour certains choix.
 - Navigation perfectible entre les différentes pages.
 - Pas de gestion avancée des profils utilisateurs (débutant / expert).
+- Pas d'import de fichiers externes pour provisionner la BDD.
 
 ---
 
@@ -173,4 +161,31 @@ L’ingénierie IHM a joué un rôle central dans ce projet, en cherchant à con
 Les écarts entre le périmètre initial et la solution finale illustrent une problématique courante en développement :  
 **l’évolution des besoins entraîne une complexification de l’IHM**, qui doit être maîtrisée par des choix de conception rigoureux.
 
-Ce projet constitue ainsi une base solide, tant sur le plan technique que sur celui de l’ingénierie des interfaces.
+Ce projet constitue un exemple de mes compétences, tant sur le plan technique que sur celui de l’ingénierie des interfaces.
+
+---
+
+## 8. Références
+
+### 8.1 Environnement de travail
+
+Le développement de l’application a été réalisé à l’aide de l'environnement suivant :
+
+- **Visual Studio Code** : éditeur principal pour le développement backend et frontend.
+- **Docker Desktop** : exécution de l’application et de la base de données PostgreSQL dans des conteneurs, garantissant un environnement reproductible.
+- **PostgreSQL** : base de données relationnelle utilisée pour le stockage des données énergétiques.
+
+Ces outils ont permis de travailler dans un contexte proche des conditions réelles de déploiement.
+
+---
+
+### 8.2 Utilisation des IA génératives
+
+Des outils d’intelligence artificielle générative ont été utilisés comme **assistance au développement**, de manière encadrée :
+
+- **GitHub Copilot (Claude Haiku 4.5)** : aide à l’auto-complétion du code et à la génération de structures de code (CRUD, modèles...).
+- **ChatGPT (version 5.2)** : support à la réflexion technique, à la compréhension des technologies utilisées et à la rédaction de documentation.
+
+Les IA n’ont pas produit de solution finale autonome :  
+le code a été **analysé, adapté, testé et validé manuellement**.  
+Elles ont servi à améliorer la productivité et la qualité, sans remplacer le travail de conception.
